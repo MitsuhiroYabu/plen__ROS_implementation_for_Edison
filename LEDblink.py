@@ -13,14 +13,14 @@ class Counter:
 c = Counter()
 
 
-def GPIOInterupt():
+def GPIOInterupt(args):
     print("interupt now")
     c.count += 1
-    if c.count >= 10:
+    if c.count >= 5:
         x.write(0)
-    elif c.count >= 15:
         c.count = 0
-        x.write(0)
+    elif c.count >= 0:
+        x.write(1)
 
 
 # Setup
@@ -37,15 +37,15 @@ pwm1 = mraa.Pwm(5)
 pwm1.period_us(700)
 pwm1.enable(True)
 value = 0.0
+add = 0.01
 
 # Loop
 while True:
-    print "ON"
-    time.sleep(0.5)
-    print "OFF"
-    time.sleep(0.5)
+    time.sleep(0.05)
     pwm0.write(value)
     pwm1.write(value)
-    value += 0.05
+    value += add
     if value >= 1:
-        value = 0.0
+        add = -0.01
+    elif value <= 0:
+        add = 0.01
