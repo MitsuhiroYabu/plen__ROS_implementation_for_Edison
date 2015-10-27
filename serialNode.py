@@ -7,7 +7,7 @@ ser = serial.Serial("/dev/ttyMFD1",9600)
 
 def callback(message):
         ser.write(message.data)
-	        rospy.loginfo("I heard %s", message.data)
+	    rospy.loginfo("I heard %s", message.data)
 
 rospy.init_node('listener')
 sub = rospy.Subscriber('chatter', String, callback)
