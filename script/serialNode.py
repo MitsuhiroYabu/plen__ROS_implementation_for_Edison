@@ -3,17 +3,26 @@ import rospy
 from std_msgs.msg import String
 import serial
 
+ser = serial.Serial("/dev/ttyMFD1", 2000000)
+uart_1_ED_RE = mraaGpio(50)
+uart_1_ED_RE.dir(mraa.DIR_OUT)
+rospy.init_node('serialNode', anonymous=True)
+rospy.Subscriber('ControlToSerial', String, callback)
+
 def read():
-	ser = serial.Serial("/dev/ttyMFD1",9600)
-	#data = ser.readline()#read to the end of the line '\n'
-	data = ser.read()
-    ser.close()
+    global uart_1_ED_RE
+    global ser
+    uart_1_ED_RE.write(1)
+    data = ser.read()
+    uart_1_ED_RE.write(0)
 	return data
 
 def write(message):
-	ser = serial.Serial("/dev/ttyMFD1",9600)
+    global uart_1_ED_RE
+    global ser
+    uart_1_ED_RE.write(1)
 	ser.write(message.data)
-	ser.close()
+    uart_1_ED_RE.write(0)
 
 def callback(message):
     rospy.loginfo("controlNode %s", message.data)
@@ -22,14 +31,22 @@ def callback(message):
         message.data = tmp[1]
     	write(message)
     elif tmp[0] == "r":
-        buf = String()
-    	buf.data = read()
-    	pub = rospy.Publisher('SerialToControl', String, queue_size = 10)
-    	pub.publish(buf)
+        pass
+    elif tmp[0] == "data":
+        message.data = ",".join(tmp[1:7])
+        write(message)
+        pass
     else:
     	pass
+r = rospy.Rate(10)
 
-rospy.init_node('serialNode', anonymous=True)
-rospy.Subscriber('ControlToSerial', String, callback)
+while not rospy.is_shutdown():
+    if ser.inWaiting() > 0:
+        data = ser.read()
+        message = String()
+        message.data = "data,r"
+        pub = rospy.Publisher('SerialToControl', String, queue_size = 10)
+        pub.publish(message)
+        ser.flush()
 
-rospy.spin()
+ser.close()

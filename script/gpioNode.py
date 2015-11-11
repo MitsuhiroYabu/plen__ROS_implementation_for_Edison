@@ -5,8 +5,8 @@ import rospy
 import mraa
 from std_msgs.msg import String
 
-PLEN_LEFT_EYE   = 3 #left eye pin number
-PLEN_RIGHT_EYE  = 5 #right eye pin number
+PLEN_LEFT_EYE   = 14 #left eye pin number
+PLEN_RIGHT_EYE  = 20 #right eye pin number
 
 plen_state      = 0 #plen's state
 pwm_value       = 0.0 #pwm
@@ -16,13 +16,18 @@ def callback(message):
     rospy.loginfo("GPIO:%s", message.data)
     tmp = message.data.split(",")
     if tmp[0] == "w" and tmp[1] == "on":
-        global pwm_value = 1.0
+        global pwm_value
+        pwm_value = 1.0
     elif tmp[0] == "w" and tmp[1] == "off":
-        global pwm_value = 0.0
-        global add_pwm_value = 0.0
+        global pwm_value
+        global add_pwm_value
+        pwm_value = 0.0
+        add_pwm_value = 0.0
     elif tmp[0] == "w" and tmp[1] == "act":
-        global pwm_value = 0.0
-        global add_pwm_value = 0.01         
+        global pwm_value
+        global add_pwm_value
+        pwm_value = 0.0
+        add_pwm_value = 0.01         
     else:
         pass
     

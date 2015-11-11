@@ -12,6 +12,8 @@ mpu.writeReg(0x6B,0x00)
 mpu.writeReg(0x1C,0x00)
 print(str(mpu.readWordReg(0x1C)))
 
+
+
 i = 0
 while i<100:
         accel_x=mpu.readReg(0x3B)

@@ -10,6 +10,9 @@ import gobject
 
 from random import randint
 
+import rospy
+from std_msgs.msg import String
+
 mainloop = None
 
 BLUEZ_SERVICE_NAME = 'org.bluez'
@@ -318,6 +321,14 @@ class TestCharacteristic(Characteristic):
         self.value = value
         s = "".join(chr(b) for b in value)
         print s
+        if ('#' in s or '$' in s or '<' in s or '>' in s):
+            LEDon = String()
+            LEDon.data = "gpio,w,act"
+            send(LEDon)
+
+        message = String()
+        message.data = "serial,w," + s
+        send(message)
 
 class TestDescriptor(Descriptor):
     """
@@ -364,6 +375,26 @@ class CharacteristicUserDescriptionDescriptor(Descriptor):
             raise NotPermittedException()
         self.value = value
 
+def property_changed(interface, changed, invalidated, path):
+    iface = interface[interface.rfind(".") + 1:]
+    for name, value in changed.iteritems():
+        val = str(value)
+        if name == 'Connected':
+            if val == '1':
+                print('PLEN_LED_ON')
+                message = String()
+                message.data = "gpio,w,on"
+                send(message)
+            elif val == '0':
+                print('PLEN_LED_OFF')
+                message = String()
+                message.data = "gpio,w,off"
+                send(message)
+            else:
+                pass
+        else:
+            pass
+
 def register_service_cb():
     print('GATT service registered')
 
@@ -383,6 +414,11 @@ def find_adapter(bus):
             return o
 
     return None
+
+def send(message):
+    rospy.loginfo("controlNode %s", message.data)
+    pub = rospy.Publisher('BleToControl', String, queue_size = 10)
+    pub.publish(message)
 
 def prepare_ble_cmd():
     pass
@@ -411,7 +447,12 @@ def main():
     bat_service = BatteryService(bus, 0)
     test_service = TestService(bus, 1)
 
-    mainloop = gobject.MainLoop()
+    mainloop = gobject.MainLoop(is_running=True)
+
+    bus.add_signal_receiver(property_changed, bus_name="org.bluez",
+            dbus_interface="org.freedesktop.DBus.Properties",
+            signal_name="PropertiesChanged",
+            path_keyword="path")
 
     service_manager.RegisterService(bat_service.get_path(), {},
                                     reply_handler=register_service_cb,
@@ -420,4 +461,12 @@ def main():
                                     reply_handler=register_service_cb,
                                     error_handler=register_service_error_cb)
     advertise()
-    mainloop.run()
+    while mainloop.is_running():
+        try:
+            mainloop.run()
+        except:
+            quit()
+
+if __name__ == '__main__':
+    rospy.init_node('bleNode', anonymous=True)
+    main()
