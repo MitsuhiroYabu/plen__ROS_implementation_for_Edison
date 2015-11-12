@@ -1,5 +1,38 @@
 #!/usr/bin/python
 
+import subprocess
+import time
+
+print('ps aux|grep bluetooth')
+ps = subprocess.Popen(['ps', 'aux'], stdout=subprocess.PIPE,)
+grep = subprocess.Popen(['grep', 'bluetooth'], stdin=ps.stdout, stdout=subprocess.PIPE,)
+end_of_pipe = grep.stdout
+
+moji_2 = []
+result = []
+detect = 0
+for line in end_of_pipe:
+        if line.find('bluetoothd') != -1:
+                moji_2 = line.split(' ')
+                detect=1
+
+val2 = 0
+if detect == 1:
+    for val in range(0,len(moji_2)):
+        if moji_2[val-val2] == "":
+            moji_2.pop(val-val2)
+            val2=val2+1
+    print('kill '+moji_2[1])
+    kill = subprocess.Popen(['kill',moji_2[1]], stdout=subprocess.PIPE,)
+    end_of_pipe = kill.stdout
+    detect = 0
+
+time.sleep(1.0)
+print('bluetoothd -nE')
+bluetoothd = subprocess.Popen(['bluetoothd','-nE'], stdout=subprocess.PIPE,)
+end_of_pipe = bluetoothd.stdout
+time.sleep(1.0)
+
 import dbus
 import dbus.exceptions
 import dbus.mainloop.glib
@@ -390,6 +423,7 @@ def property_changed(interface, changed, invalidated, path):
                 message = String()
                 message.data = "gpio,w,off"
                 send(message)
+                advertise()
             else:
                 pass
         else:
@@ -420,16 +454,18 @@ def send(message):
     pub = rospy.Publisher('BleToControl', String, queue_size = 10)
     pub.publish(message)
 
-def prepare_ble_cmd():
-    pass
-
 def advertise():
+    print('hciconfig hci0 up')
+    hci_on = subprocess.Popen(['hciconfig','hci0','up'], stdout=subprocess.PIPE,)
+    end_of_pipe = hci_on.stdout
+    time.sleep(1.0)
+    print('hciconfig hci0 leadv')
+    leadv = subprocess.Popen(['hciconfig','hci0','leadv','0'], stdout=subprocess.PIPE,)
+    end_of_pipe = leadv.stdout
     pass
 
 def main():
     global mainloop
-    #bluetoothd -nE 
-    prepare_ble_cmd()
 
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 

@@ -13,19 +13,16 @@ pwm_value       = 0.0 #pwm
 add_pwm_value   = 0.0 #add pwm_value
 
 def callback(message):
+    global pwm_value
+    global add_pwm_value
     rospy.loginfo("GPIO:%s", message.data)
     tmp = message.data.split(",")
     if tmp[0] == "w" and tmp[1] == "on":
-        global pwm_value
         pwm_value = 1.0
     elif tmp[0] == "w" and tmp[1] == "off":
-        global pwm_value
-        global add_pwm_value
         pwm_value = 0.0
         add_pwm_value = 0.0
     elif tmp[0] == "w" and tmp[1] == "act":
-        global pwm_value
-        global add_pwm_value
         pwm_value = 0.0
         add_pwm_value = 0.01         
     else:
@@ -56,4 +53,4 @@ while not rospy.is_shutdown():
     pwm0.write(pwm_value)
     pwm1.write(pwm_value)
     pub.publish(str(plen_state))#gpio state output
-	r.sleep(0.05)
+	r.sleep()

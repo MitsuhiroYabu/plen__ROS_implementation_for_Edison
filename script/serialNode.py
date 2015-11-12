@@ -1,13 +1,13 @@
 #!/usr/bin/env python
+
+import mraa
 import rospy
 from std_msgs.msg import String
 import serial
 
 ser = serial.Serial("/dev/ttyMFD1", 2000000)
-uart_1_ED_RE = mraaGpio(50)
+uart_1_ED_RE = mraa.Gpio(50)
 uart_1_ED_RE.dir(mraa.DIR_OUT)
-rospy.init_node('serialNode', anonymous=True)
-rospy.Subscriber('ControlToSerial', String, callback)
 
 def read():
     global uart_1_ED_RE
@@ -35,9 +35,11 @@ def callback(message):
     elif tmp[0] == "data":
         message.data = ",".join(tmp[1:7])
         write(message)
-        pass
     else:
     	pass
+
+rospy.init_node('serialNode', anonymous=True)
+rospy.Subscriber('ControlToSerial', String, callback)
 r = rospy.Rate(10)
 
 while not rospy.is_shutdown():
