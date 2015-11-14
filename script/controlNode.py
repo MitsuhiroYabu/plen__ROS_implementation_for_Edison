@@ -2,7 +2,7 @@
 import rospy
 from std_msgs.msg import String
 
-accelgyro = [0,0,0,0,0,0]#axa,ay,az,gx,gy,gz
+accelgyro = [0,0,0,0,0,0]#ax,ay,az,gx,gy,gz
 
 def send_message_to_gpioNode(message):
 	gpiopub = rospy.Publisher('ControlToGpio', String, queue_size = 10)

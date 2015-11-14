@@ -32,7 +32,7 @@ def callback(message):
         pass
     elif tmp[0] == "r":
     	pub = rospy.Publisher('I2cToControl', String, queue_size = 10)
-		pub.publish(getAccelGyro())
+        pub.publish(getAccelGyro())
     else:
     	pass
 
