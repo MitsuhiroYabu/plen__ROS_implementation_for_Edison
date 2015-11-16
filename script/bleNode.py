@@ -46,6 +46,9 @@ from random import randint
 import rospy
 from std_msgs.msg import String
 
+rospy.init_node('bleNode', anonymous=True)
+pub = rospy.Publisher('BleToControl', String, queue_size = 10)
+
 mainloop = None
 
 BLUEZ_SERVICE_NAME = 'org.bluez'
@@ -385,7 +388,8 @@ def find_adapter(bus):
 
 def send(message):
     rospy.loginfo("controlNode %s", message.data)
-    pub = rospy.Publisher('BleToControl', String, queue_size = 10)
+    global pub
+    #pub = rospy.Publisher('BleToControl', String, queue_size = 10)
     pub.publish(message)
 
 def advertise():
@@ -435,5 +439,5 @@ def main():
             quit()
 
 if __name__ == '__main__':
-    rospy.init_node('bleNode', anonymous=True)
+    #rospy.init_node('bleNode', anonymous=True)
     main()

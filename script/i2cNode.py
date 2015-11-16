@@ -6,6 +6,15 @@ from std_msgs.msg import String
 I2C_PORT = 0   #i2c_port_6
 I2C_ADDR = 0x68#mpu6050
 
+mpu = mraa.I2c(I2C_PORT)
+mpu.address(I2C_ADDR)
+mpu.writeReg(0x6B,0x00)
+
+rospy.init_node('i2cNode', anonymous=True)
+pub = rospy.Publisher('I2cToControl', String, queue_size = 10)
+r = rospy.Rate(5)#100Hz
+
+
 def getAccelGyro():
     global mpu
     tmp = []
@@ -26,29 +35,20 @@ def getAccelGyro():
     return send_accelgyro
     
 def callback(message):
-	rospy.loginfo("controlNode %s", message.data)
+	global pub
+    rospy.loginfo("controlNode %s", message.data)
     tmp = message.data.split(",")
     if tmp[0] == "w":
         pass
     elif tmp[0] == "r":
-    	pub = rospy.Publisher('I2cToControl', String, queue_size = 10)
+    	#pub = rospy.Publisher('I2cToControl', String, queue_size = 10)
         pub.publish(getAccelGyro())
     else:
     	pass
 
-
-mpu = mraa.I2c(I2C_PORT)
-mpu.address(I2C_ADDR)
-mpu.writeReg(0x6B,0x00)
-rospy.init_node('i2cNode', anonymous=True)
 rospy.Subscriber('ControlToI2c', String, callback)
-
-r = rospy.Rate(10)#20Hz
 
 # Loop
 while not rospy.is_shutdown():
-    pub = rospy.Publisher('I2cToControl', String, queue_size = 10)
     pub.publish(getAccelGyro())
     r.sleep()
-
-

@@ -6,8 +6,9 @@ from std_msgs.msg import String
 import serial
 
 ser = serial.Serial("/dev/ttyMFD1", 2000000)
-uart_1_ED_RE = mraa.Gpio(50)
+uart_1_ED_RE = mraa.Gpio(36)
 uart_1_ED_RE.dir(mraa.DIR_OUT)
+uart_1_ED_RE.write(0)
 
 def read():
     global uart_1_ED_RE
@@ -40,15 +41,16 @@ def callback(message):
 
 rospy.init_node('serialNode', anonymous=True)
 rospy.Subscriber('ControlToSerial', String, callback)
-r = rospy.Rate(10)
+pub = rospy.Publisher('SerialToControl', String, queue_size = 10)
+r = rospy.Rate(50)#10Hz
 
 while not rospy.is_shutdown():
     if ser.inWaiting() > 0:
         data = ser.read()
         message = String()
         message.data = "data,r"
-        pub = rospy.Publisher('SerialToControl', String, queue_size = 10)
         pub.publish(message)
         ser.flush()
+    r.sleep()
 
 ser.close()

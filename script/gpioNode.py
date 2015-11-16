@@ -52,5 +52,5 @@ while not rospy.is_shutdown():
     #pwm output
     pwm0.write(pwm_value)
     pwm1.write(pwm_value)
-    pub.publish(str(plen_state))#gpio state output
+    #pub.publish(str(plen_state))#gpio state output
 	r.sleep()
