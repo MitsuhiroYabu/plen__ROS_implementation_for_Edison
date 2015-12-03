@@ -3,5 +3,4 @@
 	<node pkg="ros_start" name="gpioNode" type="gpioNode.py"/>
 	<node pkg="ros_start" name="serialNode" type="serialNode.py"/>
 	<node pkg="ros_start" name="i2cNode" type="i2cNode.py"/>
-	<node pkg="ros_start" name="bleNode" type="bleNode.py"/>
 </launch>
