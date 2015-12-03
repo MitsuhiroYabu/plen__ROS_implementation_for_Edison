@@ -47,7 +47,7 @@ import rospy
 from std_msgs.msg import String
 
 rospy.init_node('bleNode', anonymous=True)
-pub = rospy.Publisher('BleToControl', String, queue_size = 10)
+pub = rospy.Publisher('BleToControl', String, queue_size = 30)
 
 mainloop = None
 
@@ -277,9 +277,27 @@ class TestCharacteristic(Characteristic):
                 ['read', 'write', 'writable-auxiliaries'],
                 service)
         self.value = []
+        self.buffer = []
+        self.writingflag=0
+        gobject.timeout_add(5, self.read_buffer)
         self.add_descriptor(
-                CharacteristicUserDescriptionDescriptor(bus, 1, self))
-
+                CharacteristicUserDescriptionDescriptor(bus, 0, self))
+    
+    def read_buffer(self):
+        #print('read_buffer()')
+        if self.writingflag == 0 and len(self.buffer):
+            message = String()
+            message.data = "serial,w,"
+            if len(self.buffer):
+                if ('#' in self.buffer[0] or '$' in self.buffer[0] or '<' in self.buffer[0] or '>' in self.buffer[0]):
+                    LEDon = String()
+                    LEDon.data = "gpio,w,act"
+                    send(LEDon)
+                message.data += self.buffer[0]
+                self.buffer.pop(0)
+            send(message)
+        return True
+    
     def ReadValue(self):
         print('TestCharacteristic Read: ' + repr(self.value))
         print('TestCharacteristic Read value: ' + str(self.value))
@@ -288,37 +306,20 @@ class TestCharacteristic(Characteristic):
     def WriteValue(self, value):
         #print('TestCharacteristic Write: ' + repr(value))
         #print('TestCharacteristic Write value: ' + str(value))
+        self.writingflag=1
         self.value = value
         s = "".join(chr(b) for b in value)
-        print s
-        if ('#' in s or '$' in s or '<' in s or '>' in s):
-            LEDon = String()
-            LEDon.data = "gpio,w,act"
-            send(LEDon)
+        self.buffer.append(s)
+        self.writingflag=0
+        #print s
+        #if ('#' in s or '$' in s or '<' in s or '>' in s):
+        #    LEDon = String()
+        #    LEDon.data = "gpio,w,act"
+        #    send(LEDon)
 
-        message = String()
-        message.data = "serial,w," + s
-        send(message)
-
-class TestDescriptor(Descriptor):
-    """
-    Dummy test descriptor. Returns a static value.
-
-    """
-    TEST_DESC_UUID = '12345678-1234-5678-1234-56789abcdef2'
-
-    def __init__(self, bus, index, characteristic):
-        Descriptor.__init__(
-                self, bus, index,
-                self.TEST_DESC_UUID,
-                ['read', 'write'],
-                characteristic)
-
-    def ReadValue(self):
-        return [
-                dbus.Byte('T'), dbus.Byte('e'), dbus.Byte('s'), dbus.Byte('t')
-        ]
-
+        #message = String()
+        #message.data = "serial,w," + s
+        #send(message)
 
 class CharacteristicUserDescriptionDescriptor(Descriptor):
     """
@@ -376,8 +377,7 @@ def register_service_error_cb(error):
 
 
 def find_adapter(bus):
-    remote_om = dbus.Interface(bus.get_object(BLUEZ_SERVICE_NAME, '/'),
-                               DBUS_OM_IFACE)
+    remote_om = dbus.Interface(bus.get_object(BLUEZ_SERVICE_NAME, '/'), DBUS_OM_IFACE)
     objects = remote_om.GetManagedObjects()
 
     for o, props in objects.iteritems():
@@ -393,14 +393,27 @@ def send(message):
     pub.publish(message)
 
 def advertise():
+    #hci_off = subprocess.Popen(['hciconfig','hci0','down'], stdout=subprocess.PIPE,)
+    #end_of_pipe = hci_off.stdout
     print('hciconfig hci0 up')
     hci_on = subprocess.Popen(['hciconfig','hci0','up'], stdout=subprocess.PIPE,)
     end_of_pipe = hci_on.stdout
-    time.sleep(1.0)
-    print('hciconfig hci0 leadv')
-    leadv = subprocess.Popen(['hciconfig','hci0','leadv','0'], stdout=subprocess.PIPE,)
-    end_of_pipe = leadv.stdout
-    pass
+    
+    print('hcitool1')
+    hcitool_cmd1 = subprocess.Popen(['hcitool', '-i', 'hci0', 'cmd', '0x08', '0x0006', '20', '00', '20', '00','00', '00', '00', '00', '00', '00', '00', '00', '00', '07','00'], stdout=subprocess.PIPE,)
+    end_of_pipe = hcitool_cmd1.stdout
+    
+    print('hcitool2')
+    hcitool_cmd2 = subprocess.Popen(['hcitool','-i','hci0','cmd','0x08','0x0008','15','02','01','06','11','07','e6','dd','af','9d','bc','dd','8d','83','c1','43','e1','cf','69','04','f4','e1'], stdout=subprocess.PIPE,)
+    end_of_pipe = hcitool_cmd2.stdout
+    
+    print('leadv')
+    hcitool_cmd3 = subprocess.Popen(['hcitool', '-i', 'hci0', 'cmd', '0x08', '0x000a' ,'01'],stdout=subprocess.PIPE,)
+    end_of_pipe = hcitool_cmd3.stdout
+    
+    #leadv = subprocess.Popen(['hciconfig','hci0','leadv','3'], stdout=subprocess.PIPE,)
+    #end_of_pipe = leadv.stdout
+    
 
 def main():
     global mainloop
@@ -418,25 +431,19 @@ def main():
             bus.get_object(BLUEZ_SERVICE_NAME, adapter),
             GATT_MANAGER_IFACE)
 
-    bat_service = BatteryService(bus, 0)
-    test_service = TestService(bus, 1)
+    test_service = TestService(bus, 0)
 
     mainloop = gobject.MainLoop(is_running=True)
 
-    bus.add_signal_receiver(property_changed, bus_name="org.bluez",
-            dbus_interface="org.freedesktop.DBus.Properties",
-            signal_name="PropertiesChanged",
-            path_keyword="path")
-
-    service_manager.RegisterService(test_service.get_path(), {},
-                                    reply_handler=register_service_cb,
-                                    error_handler=register_service_error_cb)
+    bus.add_signal_receiver(property_changed, bus_name="org.bluez", dbus_interface="org.freedesktop.DBus.Properties", signal_name="PropertiesChanged", path_keyword="path")
+    service_manager.RegisterService(test_service.get_path(), {}, reply_handler=register_service_cb, error_handler=register_service_error_cb)
+    advertise()
     advertise()
     while mainloop.is_running():
         try:
             mainloop.run()
         except:
-            quit()
+            mainloop.quit()
 
 if __name__ == '__main__':
     #rospy.init_node('bleNode', anonymous=True)

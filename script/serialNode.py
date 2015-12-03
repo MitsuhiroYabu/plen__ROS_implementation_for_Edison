@@ -36,13 +36,11 @@ def callback(message):
     elif tmp[0] == "data":
         message.data = ",".join(tmp[1:7])
         write(message)
-    else:
-    	pass
 
 rospy.init_node('serialNode', anonymous=True)
 rospy.Subscriber('ControlToSerial', String, callback)
 pub = rospy.Publisher('SerialToControl', String, queue_size = 10)
-r = rospy.Rate(50)#10Hz
+r = rospy.Rate(50)#50Hz
 
 while not rospy.is_shutdown():
     if ser.inWaiting() > 0:

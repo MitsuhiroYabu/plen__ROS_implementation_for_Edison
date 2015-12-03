@@ -24,7 +24,7 @@ def callback(message):
         add_pwm_value = 0.0
     elif tmp[0] == "w" and tmp[1] == "act":
         pwm_value = 0.0
-        add_pwm_value = 0.01         
+        add_pwm_value = 0.05       
     else:
         pass
     

@@ -10,7 +10,7 @@ accelgyro = [0,0,0,0,0,0]#ax,ay,az,gx,gy,gz
 
 rospy.init_node('ControlNode', anonymous=True)
 gpiopub = rospy.Publisher('ControlToGpio', String, queue_size = 10)
-serialpub =	rospy.Publisher('ControlToSerial', String, queue_size = 10)
+serialpub =	rospy.Publisher('ControlToSerial', String, queue_size = 30)
 blepub = rospy.Publisher('ControlToBle', String, queue_size = 10)
 i2cpub = rospy.Publisher('ControlToI2c', String, queue_size = 10)
 

@@ -12,7 +12,7 @@ mpu.writeReg(0x6B,0x00)
 
 rospy.init_node('i2cNode', anonymous=True)
 pub = rospy.Publisher('I2cToControl', String, queue_size = 10)
-r = rospy.Rate(5)#100Hz
+r = rospy.Rate(25)#50Hz
 
 
 def getAccelGyro():
@@ -38,13 +38,8 @@ def callback(message):
 	global pub
     rospy.loginfo("controlNode %s", message.data)
     tmp = message.data.split(",")
-    if tmp[0] == "w":
-        pass
-    elif tmp[0] == "r":
-    	#pub = rospy.Publisher('I2cToControl', String, queue_size = 10)
+    if tmp[0] == "r":
         pub.publish(getAccelGyro())
-    else:
-    	pass
 
 rospy.Subscriber('ControlToI2c', String, callback)
 
