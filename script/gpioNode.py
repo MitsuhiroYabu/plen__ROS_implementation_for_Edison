@@ -5,8 +5,10 @@ import rospy
 import mraa
 from std_msgs.msg import String
 
+#Setting I/O pin
 PLEN_LEFT_EYE   = 14 #left eye pin number
 PLEN_RIGHT_EYE  = 20 #right eye pin number
+
 
 plen_state      = 0 #plen's state
 pwm_value       = 0.0 #pwm
@@ -36,7 +38,7 @@ pwm1 = mraa.Pwm(PLEN_RIGHT_EYE)
 pwm1.period_us(700)
 pwm1.enable(True)
 
-#ros setup
+#ROS setup
 rospy.init_node('gpioNode', anonymous=True)
 pub = rospy.Publisher('GpioToControl', String, queue_size = 10)
 sub = rospy.Subscriber('ControlToGpio', String, callback)
@@ -49,8 +51,6 @@ while not rospy.is_shutdown():
         add_pwm_value = 0.0
         pwm_value = 1.0
 
-    #pwm output
     pwm0.write(pwm_value)
     pwm1.write(pwm_value)
-    #pub.publish(str(plen_state))#gpio state output
 	r.sleep()

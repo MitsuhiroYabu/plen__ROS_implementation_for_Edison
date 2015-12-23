@@ -5,6 +5,7 @@ import rospy
 from std_msgs.msg import String
 import serial
 
+#Setting Serial communication
 ser = serial.Serial("/dev/ttyMFD1", 2000000)
 uart_1_ED_RE = mraa.Gpio(36)
 uart_1_ED_RE.dir(mraa.DIR_OUT)
@@ -23,6 +24,7 @@ def write(message):
     global ser
     uart_1_ED_RE.write(1)
 	ser.write(message.data)
+    ser.write("send")
     uart_1_ED_RE.write(0)
 
 def callback(message):
@@ -37,6 +39,7 @@ def callback(message):
         message.data = ",".join(tmp[1:7])
         write(message)
 
+#Setting ROS
 rospy.init_node('serialNode', anonymous=True)
 rospy.Subscriber('ControlToSerial', String, callback)
 pub = rospy.Publisher('SerialToControl', String, queue_size = 10)
