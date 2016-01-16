@@ -3,6 +3,7 @@
 import subprocess
 import time
 
+#bluetoothdのプロセスを終了する
 print('ps aux|grep bluetooth')
 ps = subprocess.Popen(['ps', 'aux'], stdout=subprocess.PIPE,)
 grep = subprocess.Popen(['grep', 'bluetooth'], stdin=ps.stdout, stdout=subprocess.PIPE,)
@@ -444,6 +445,29 @@ def main():
             mainloop.run()
         except:
             mainloop.quit()
+    print('ps aux|grep bluetooth')
+    ps = subprocess.Popen(['ps', 'aux'], stdout=subprocess.PIPE,)
+    grep = subprocess.Popen(['grep', 'bluetooth'], stdin=ps.stdout, stdout=subprocess.PIPE,)
+    end_of_pipe = grep.stdout
+
+    moji_2 = []
+    result = []
+    detect = 0
+    for line in end_of_pipe:
+        if line.find('bluetoothd') != -1:
+            moji_2 = line.split(' ')
+            detect=1
+
+    val2 = 0
+    if detect == 1:
+        for val in range(0,len(moji_2)):
+            if moji_2[val-val2] == "":
+                moji_2.pop(val-val2)
+                val2=val2+1
+        print('kill '+moji_2[1])
+        kill = subprocess.Popen(['kill',moji_2[1]], stdout=subprocess.PIPE,)
+        end_of_pipe = kill.stdout
+        detect = 0
 
 if __name__ == '__main__':
     #rospy.init_node('bleNode', anonymous=True)

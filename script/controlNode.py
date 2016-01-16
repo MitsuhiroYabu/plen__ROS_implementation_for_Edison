@@ -52,7 +52,7 @@ def publish_control(message):
 			send.data = "data"
 			global accelgyro
 			for num in range(0,len(accelgyro)):
-        		send.data += ','+str(accelgyro[num])
+        		send.data += ','+accelgyro[num]
         	send_message_to_serialNode(send)
 
 
