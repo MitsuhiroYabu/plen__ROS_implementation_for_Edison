@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import mraa
 import rospy
 from std_msgs.msg import String
@@ -12,15 +13,16 @@ mpu.writeReg(0x6B,0x00)
 
 rospy.init_node('i2cNode', anonymous=True)
 pub = rospy.Publisher('I2cToControl', String, queue_size = 10)
-r = rospy.Rate(25)#50Hz
-
+r = rospy.Rate(100)#100Hz
 
 def getAccelGyro():
     global mpu
     tmp = []
     accelgyro = []
+
     for address in [0x3B,0x3C,0x3D,0x3E,0x3F,0x40,0x43,0x44,0x45,0x46,0x47,0x48]:
         tmp.append(mpu.readReg(address))
+    
     for val in [0,2,4,6,8,10]:
         result = (tmp[val] << 8) + tmp[val+1]
         if result > 32767:

@@ -47,6 +47,7 @@ r = rospy.Rate(20)#20Hz
 # Loop
 while not rospy.is_shutdown():
     pwm_value += add_pwm_value
+
     if pwm_value >= 1.0:
         add_pwm_value = 0.0
         pwm_value = 1.0
