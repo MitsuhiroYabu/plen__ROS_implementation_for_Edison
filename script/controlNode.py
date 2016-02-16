@@ -68,13 +68,18 @@ def callback_ble(message):
     rospy.loginfo("bleNode %s", message.data)
     publish_control(message)
 
-def callback_i2c(message):
-    rospy.loginfo("i2cNode %s", message.data)
+def callback_pc(message):
+    rospy.loginfo("bleNode %s", message.data)
     publish_control(message)
 
+"""def callback_i2c(message):
+    rospy.loginfo("i2cNode %s", message.data)
+    publish_control(message)
+"""
 rospy.Subscriber('GpioToControl', String, callback_gpio)
 rospy.Subscriber('SerialToControl', String, callback_serial)
 rospy.Subscriber('BleToControl', String, callback_ble)
+rospy.Subscriber('PcToControl', String, callback_pc)
 #rospy.Subscriber('I2cToControl', String, callback_i2c)
 
 rospy.spin()
