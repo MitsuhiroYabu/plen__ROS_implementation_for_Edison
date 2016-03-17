@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import mraa
-from strcut import *
+from struct import *
 import rospy
 from std_msgs.msg import String
 import serial
@@ -22,15 +22,15 @@ def write(message):
     global uart_1_ED_RE
     global ser
     uart_1_ED_RE.write(1)
-	ser.write(message.data)
+    ser.write(message.data)
     ser.flush()
     uart_1_ED_RE.write(0)
 
-def writeacgy(acgydata):
+def writeacgy(senddata):
     global uart_1_ED_RE
     global ser
     uart_1_ED_RE.write(1)
-    ser.write(acgydata)
+    ser.write(senddata)
     ser.write("\n")
     ser.flush()
     uart_1_ED_RE.write(0)
@@ -40,10 +40,13 @@ def callback(message):
     tmp = message.data.split(",")
     if tmp[0] == "w":
         message.data = tmp[1]
-    	write(message)
+        write(message)
     elif tmp[0] == "r":
         pass
     elif tmp[0] == "data":
+        pass
+        #data = pack(">hhhhhh",int(tmp[1]),int(tmp[2]),int(tmp[3]),int(tmp[4]),int(tmp[5]),int(tmp[6]))
+        #writeacgy(data)
 
 def call_sensor_data(message):
     global acgydata

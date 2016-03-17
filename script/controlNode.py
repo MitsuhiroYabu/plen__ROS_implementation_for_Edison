@@ -69,7 +69,7 @@ def callback_ble(message):
     publish_control(message)
 
 def callback_pc(message):
-    rospy.loginfo("bleNode %s", message.data)
+    rospy.loginfo("pcNode %s", message.data)
     publish_control(message)
 
 """def callback_i2c(message):

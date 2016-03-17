@@ -3,8 +3,6 @@
 import subprocess
 import time
 
-#bluetoothdのプロセスを終了する
-print('ps aux|grep bluetooth')
 ps = subprocess.Popen(['ps', 'aux'], stdout=subprocess.PIPE,)
 grep = subprocess.Popen(['grep', 'bluetooth'], stdin=ps.stdout, stdout=subprocess.PIPE,)
 end_of_pipe = grep.stdout
@@ -13,23 +11,21 @@ moji_2 = []
 result = []
 detect = 0
 for line in end_of_pipe:
-    if line.find('bluetoothd') != -1:
-        moji_2 = line.split(' ')
-        detect=1
-
+        if line.find('bluetoothd') != -1:
+                moji_2 = line.split(' ')
+                detect=1
 val2 = 0
+print moji_2
 if detect == 1:
-    for val in range(0,len(moji_2)):
-        if moji_2[val-val2] == "":
-            moji_2.pop(val-val2)
-            val2=val2+1
-    print('kill '+moji_2[1])
-    kill = subprocess.Popen(['kill',moji_2[1]], stdout=subprocess.PIPE,)
-    end_of_pipe = kill.stdout
-    detect = 0
-
+        for val in range(0,len(moji_2)):
+                if moji_2[val-val2] == "":
+                        moji_2.pop(val-val2)
+                        val2=val2+1
+        print moji_2
+        kill = subprocess.Popen(['kill',moji_2[1]], stdout=subprocess.PIPE,)
+        end_of_pipe = kill.stdout
+        detect = 0
 time.sleep(1.0)
-print('bluetoothd -nE')
 bluetoothd = subprocess.Popen(['bluetoothd','-nE'], stdout=subprocess.PIPE,)
 end_of_pipe = bluetoothd.stdout
 time.sleep(1.0)
@@ -48,7 +44,7 @@ import rospy
 from std_msgs.msg import String
 
 rospy.init_node('bleNode', anonymous=True)
-pub = rospy.Publisher('BleToControl', String, queue_size = 30)
+pub = rospy.Publisher('BleToControl', String, queue_size = 10)
 
 mainloop = None
 
@@ -258,10 +254,23 @@ class TestService(Service):
 
     """
     TEST_SVC_UUID = 'E1F40469-CFE1-43C1-838D-DDBC9DAFDDE6'
+    CH_UUID =  'F90E9CFE-7E05-44A5-9D75-F13644D6F645'
+    CH_UUID2 = 'CF70EE7F-2A26-4F62-931F-9087AB12552C'
+    CH_UUID3 = '2ED17A59-FC21-488E-9204-503EB78158D7'
+    CH_UUIDd = '2ED17A59-FC21-488E-9204-503EB78158D6'
+    CH_UUIDe = '2ED17A59-FC21-488E-9204-503EB78158D5'
+    CH_UUIDf = '2ED17A59-FC21-488E-9204-503EB78158D6'
 
     def __init__(self, bus, index):
         Service.__init__(self, bus, index, self.TEST_SVC_UUID, True)
-        self.add_characteristic(TestCharacteristic(bus, 0, self))
+        self.add_characteristic(TestCharacteristic(bus, 0, self, self.CH_UUIDf,1,1,['read','write', 'writable-auxiliaries']))
+        self.add_characteristic(TestCharacteristic(bus, 1, self, self.CH_UUIDe,1,1,['read','write', 'writable-auxiliaries']))
+        self.add_characteristic(TestCharacteristic(bus, 2, self, self.CH_UUID2,0,1,['read']))
+        self.add_characteristic(TestCharacteristic(bus, 3, self, self.CH_UUID,0,1,['read', 'write','writable-auxiliaries']))
+        self.add_characteristic(TestCharacteristic(bus, 4, self, self.CH_UUIDd,0,1,['read', 'write']))
+        #self.add_characteristic(TestCharacteristic(bus, 0, self, self.CH_UUIDe,1,0))
+        #self.add_characteristic(TestCharacteristic(bus, 4, self, self.CH_UUIDe,1,0))
+        self.add_characteristic(TestCharacteristic(bus, 5, self, self.CH_UUID3,0,1,['read', 'write']))
 
 class TestCharacteristic(Characteristic):
     """
@@ -269,36 +278,20 @@ class TestCharacteristic(Characteristic):
     contains "extended properties", as well as a test descriptor.
 
     """
-    TEST_CHRC_UUID = 'F90E9CFE-7E05-44A5-9D75-F13644D6F645'
+    #TEST_CHRC_UUID = 'F90E9CFE-7E05-44A5-9D75-F13644D6F645'
 
-    def __init__(self, bus, index, service):
+    def __init__(self, bus, index, service,TEST_CHRC_UUID,flag,flag2,p):
         Characteristic.__init__(
                 self, bus, index,
-                self.TEST_CHRC_UUID,
-                ['read', 'write', 'writable-auxiliaries'],
+                TEST_CHRC_UUID,
+                p,
                 service)
         self.value = []
-        self.buffer = []
-        self.writingflag=0
-        gobject.timeout_add(5, self.read_buffer)
-        self.add_descriptor(
-                CharacteristicUserDescriptionDescriptor(bus, 0, self))
-    
-    def read_buffer(self):
-        #print('read_buffer()')
-        if self.writingflag == 0 and len(self.buffer):
-            message = String()
-            message.data = "serial,w,"
-            if len(self.buffer):
-                if ('#' in self.buffer[0] or '$' in self.buffer[0] or '<' in self.buffer[0] or '>' in self.buffer[0]):
-                    LEDon = String()
-                    LEDon.data = "gpio,w,act"
-                    send(LEDon)
-                message.data += self.buffer[0]
-                self.buffer.pop(0)
-            send(message)
-        return True
-    
+        if flag == 1:
+                self.add_descriptor(TestDescriptor(bus, 0, self))
+        if flag2 == 1:
+                self.add_descriptor(CharacteristicUserDescriptionDescriptor(bus, 1, self))
+
     def ReadValue(self):
         print('TestCharacteristic Read: ' + repr(self.value))
         print('TestCharacteristic Read value: ' + str(self.value))
@@ -307,20 +300,43 @@ class TestCharacteristic(Characteristic):
     def WriteValue(self, value):
         #print('TestCharacteristic Write: ' + repr(value))
         #print('TestCharacteristic Write value: ' + str(value))
-        self.writingflag=1
+        
         self.value = value
         s = "".join(chr(b) for b in value)
-        self.buffer.append(s)
-        self.writingflag=0
-        #print s
-        #if ('#' in s or '$' in s or '<' in s or '>' in s):
-        #    LEDon = String()
-        #    LEDon.data = "gpio,w,act"
-        #    send(LEDon)
+        print s
+        rospy.loginfo("controlNode %s", s)
+        
+        if ('#' in s or '$' in s or '<' in s or '>' in s):
+            LEDon = String()
+            LEDon.data = "gpio,w,act"
+            send(LEDon)
 
-        #message = String()
-        #message.data = "serial,w," + s
-        #send(message)
+        message = String()
+        message.data = "serial,w," + s
+        send(message)
+
+    def StartNotify(self):
+        print('callback:StartNotify')
+
+class TestDescriptor(Descriptor):
+    """
+    Dummy test descriptor. Returns a static value.
+
+    """
+    TEST_DESC_UUID = '12345678-1234-5678-1234-56789abcdef2'
+
+    def __init__(self, bus, index, characteristic):
+        Descriptor.__init__(
+                self, bus, index,
+                self.TEST_DESC_UUID,
+                ['read', 'write'],
+                characteristic)
+
+    def ReadValue(self):
+        return [
+                dbus.Byte('T'), dbus.Byte('e'), dbus.Byte('s'), dbus.Byte('t')
+        ]
+
 
 class CharacteristicUserDescriptionDescriptor(Descriptor):
     """
@@ -348,25 +364,32 @@ class CharacteristicUserDescriptionDescriptor(Descriptor):
         self.value = value
 
 def property_changed(interface, changed, invalidated, path):
-    iface = interface[interface.rfind(".") + 1:]
-    for name, value in changed.iteritems():
-        val = str(value)
-        if name == 'Connected':
-            if val == '1':
-                print('PLEN_LED_ON')
-                message = String()
-                message.data = "gpio,w,on"
-                send(message)
-            elif val == '0':
-                print('PLEN_LED_OFF')
-                message = String()
-                message.data = "gpio,w,off"
-                send(message)
-                advertise()
-            else:
-                pass
-        else:
-            pass
+        iface = interface[interface.rfind(".") + 1:]
+        for name, value in changed.iteritems():
+                val = str(value)
+                #print(name + "=" + val)
+                if name == 'Connected':
+                        if val == "1":
+                                print("ON")
+                                message = String()
+                                message.data = "gpio,w,on"
+                                send(message)
+                        elif val == "0":
+                                print("OFF")
+                                message = String()
+                                message.data = "gpio,w,off"
+                                send(message)
+                                advertise()
+
+                        else:
+                                pass
+                elif name == 'Alias' or name == 'Name':
+                    print("ON")
+                    message = String()
+                    message.data = "gpio,w,on"
+                    send(message)
+                else:
+                        pass
 
 def register_service_cb():
     print('GATT service registered')
@@ -378,9 +401,10 @@ def register_service_error_cb(error):
 
 
 def find_adapter(bus):
-    remote_om = dbus.Interface(bus.get_object(BLUEZ_SERVICE_NAME, '/'), DBUS_OM_IFACE)
+    remote_om = dbus.Interface(bus.get_object(BLUEZ_SERVICE_NAME, '/'),
+                               DBUS_OM_IFACE)
     objects = remote_om.GetManagedObjects()
-
+    #print object
     for o, props in objects.iteritems():
         if props.has_key(GATT_MANAGER_IFACE):
             return o
@@ -389,36 +413,30 @@ def find_adapter(bus):
 
 def send(message):
     rospy.loginfo("controlNode %s", message.data)
-    global pub
     #pub = rospy.Publisher('BleToControl', String, queue_size = 10)
     pub.publish(message)
 
+def prepare_ble_cmd():
+    pass
+
 def advertise():
-    #hci_off = subprocess.Popen(['hciconfig','hci0','down'], stdout=subprocess.PIPE,)
-    #end_of_pipe = hci_off.stdout
-    print('hciconfig hci0 up')
+    print('hciup')
     hci_on = subprocess.Popen(['hciconfig','hci0','up'], stdout=subprocess.PIPE,)
+
     end_of_pipe = hci_on.stdout
-    
-    print('hcitool1')
-    hcitool_cmd1 = subprocess.Popen(['hcitool', '-i', 'hci0', 'cmd', '0x08', '0x0006', '20', '00', '20', '00','00', '00', '00', '00', '00', '00', '00', '00', '00', '07','00'], stdout=subprocess.PIPE,)
-    end_of_pipe = hcitool_cmd1.stdout
-    
-    print('hcitool2')
-    hcitool_cmd2 = subprocess.Popen(['hcitool','-i','hci0','cmd','0x08','0x0008','15','02','01','06','11','07','e6','dd','af','9d','bc','dd','8d','83','c1','43','e1','cf','69','04','f4','e1'], stdout=subprocess.PIPE,)
+    time.sleep(0.1)
+    print('hcitool')
+    hcitool_cmd2 = subprocess.Popen(['hcitool', '-i', 'hci0', 'cmd', '0x08', '0x0006', '20', '00', '20', '00','00', '00', '00', '00', '00', '00', '00', '00', '00', '07','00'], stdout=subprocess.PIPE,)
+
     end_of_pipe = hcitool_cmd2.stdout
-    
-    print('leadv')
+    hcitool_cmd = subprocess.Popen(['hcitool','-i','hci0','cmd','0x08','0x0008','15','02','01','06','11','07','e6','dd','af','9d','bc','dd','8d','83','c1','43','e1','cf','69','04','f4','e1'], stdout=subprocess.PIPE,)
+
+    end_of_pipe = hcitool_cmd.stdout
     hcitool_cmd3 = subprocess.Popen(['hcitool', '-i', 'hci0', 'cmd', '0x08', '0x000a' ,'01'],stdout=subprocess.PIPE,)
     end_of_pipe = hcitool_cmd3.stdout
-    
-    #leadv = subprocess.Popen(['hciconfig','hci0','leadv','3'], stdout=subprocess.PIPE,)
-    #end_of_pipe = leadv.stdout
-    
 
 def main():
     global mainloop
-
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
     bus = dbus.SystemBus()
@@ -432,43 +450,33 @@ def main():
             bus.get_object(BLUEZ_SERVICE_NAME, adapter),
             GATT_MANAGER_IFACE)
 
-    test_service = TestService(bus, 0)
+    #bat_service = BatteryService(bus, 0)
+    test_service = TestService(bus,0)
 
     mainloop = gobject.MainLoop(is_running=True)
 
-    bus.add_signal_receiver(property_changed, bus_name="org.bluez", dbus_interface="org.freedesktop.DBus.Properties", signal_name="PropertiesChanged", path_keyword="path")
+    bus.add_signal_receiver(property_changed, bus_name="org.bluez",
+                        dbus_interface="org.freedesktop.DBus.Properties",
+                        signal_name="PropertiesChanged",
+                        path_keyword="path")
+
     service_manager.RegisterService(test_service.get_path(), {}, reply_handler=register_service_cb, error_handler=register_service_error_cb)
     advertise()
     advertise()
-    while mainloop.is_running():
-        try:
-            mainloop.run()
-        except:
-            mainloop.quit()
-    print('ps aux|grep bluetooth')
-    ps = subprocess.Popen(['ps', 'aux'], stdout=subprocess.PIPE,)
-    grep = subprocess.Popen(['grep', 'bluetooth'], stdin=ps.stdout, stdout=subprocess.PIPE,)
-    end_of_pipe = grep.stdout
+    try:
+        print "mainloop.run!"
+        mainloop.run()
 
-    moji_2 = []
-    result = []
-    detect = 0
-    for line in end_of_pipe:
-        if line.find('bluetoothd') != -1:
-            moji_2 = line.split(' ')
-            detect=1
+    except (KeyboardInterrupt, SystemExit):
+        mainloop.quit()
+        print "mainloop.quit!"
 
-    val2 = 0
-    if detect == 1:
-        for val in range(0,len(moji_2)):
-            if moji_2[val-val2] == "":
-                moji_2.pop(val-val2)
-                val2=val2+1
-        print('kill '+moji_2[1])
-        kill = subprocess.Popen(['kill',moji_2[1]], stdout=subprocess.PIPE,)
-        end_of_pipe = kill.stdout
-        detect = 0
+def mybleNode_shutdown():
+    global mainloop
+    mainloop.quit()
+    print "shutdown now!"
+
+rospy.on_shutdown(mybleNode_shutdown)
 
 if __name__ == '__main__':
-    #rospy.init_node('bleNode', anonymous=True)
     main()
